@@ -1040,4 +1040,9 @@
 		<key id="KEY_FILE" mapto="file" flags="b"/>
 		<key id="KEY_FILE" mapto="file_long" flags="l"/>
 	</map>
+	<translate>
+		<device name="gigablue remote control">
+			<key from="KEY_OPTION" to="KEY_HELP"/>
+		</device>
+	</translate>
 </keymap>

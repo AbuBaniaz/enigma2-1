@@ -29,7 +29,6 @@ public:
 	void unbindAction(const std::string &context, SWIG_PYOBJECT(ePyObject) function);
 
 	void bindKey(const std::string &domain, const std::string &device, int key, int flags, const std::string &context, const std::string &action);
-	void unbindNativeKey(const std::string &context, int action);
 	void unbindKeyDomain(const std::string &domain);
 
 	void keyPressed(const std::string &device, int key, int flags);

@@ -7,11 +7,11 @@ from keyids import KEYIDS
 from Tools.KeyBindings import addKeyBinding
 
 class KeymapError(Exception):
-	def __init__(self, message):
-		self.msg = message
+    def __init__(self, message):
+        self.msg = message
 
-	def __str__(self):
-		return self.msg
+    def __str__(self):
+        return self.msg
 
 def parseKeys(context, filename, actionmap, device, keys):
 	for x in keys.findall("key"):
@@ -36,12 +36,12 @@ def parseKeys(context, filename, actionmap, device, keys):
 			elif id[1] == 'd':
 				keyid = int(id[2:]) | 0x8000
 			else:
-				raise KeymapError("[Keymapparser] key id '" + str(id) + "' is neither hex nor dec")
+				raise KeymapError("key id '" + str(id) + "' is neither hex nor dec")
 		else:
 			try:
 				keyid = KEYIDS[id]
 			except:
-				raise KeymapError("[Keymapparser] key id '" + str(id) + "' is illegal")
+				raise KeymapError("key id '" + str(id) + "' is illegal")
 #				print context + "::" + mapto + " -> " + device + "." + hex(keyid)
 		actionmap.bindKey(filename, device, keyid, flags, context, mapto)
 		addKeyBinding(filename, keyid, context, mapto, flags)
@@ -55,9 +55,8 @@ def readKeymap(filename):
 	try:
 		dom = xml.etree.cElementTree.parse(source)
 	except:
-		raise KeymapError("[Keymapparser] keymap %s not well-formed." % filename)
+		raise KeymapError("keymap %s not well-formed." % filename)
 
-	source.close()
 	keymap = dom.getroot()
 
 	for cmap in keymap.findall("map"):

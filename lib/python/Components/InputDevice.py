@@ -3,13 +3,9 @@ from SystemInfo import SystemInfo
 from fcntl import ioctl
 import os
 import struct
-from boxbranding import getBrandOEM
 import platform
 
-from Tools.Directories import pathExists
-
-
-# asm-generic/ioctl.h
+# include/uapi/asm-generic/ioctl.h
 IOC_NRBITS = 8L
 IOC_TYPEBITS = 8L
 IOC_SIZEBITS = 13L if "mips" in platform.machine() else 14L
@@ -34,7 +30,7 @@ class inputDevices:
 		self.getInputDevices()
 
 	def getInputDevices(self):
-		devices = sorted(os.listdir("/dev/input/"))
+		devices = os.listdir("/dev/input/")
 
 		for evdev in devices:
 			try:
@@ -44,24 +40,22 @@ class inputDevices:
 				self.name = self.name[:self.name.find("\0")]
 				os.close(self.fd)
 			except (IOError,OSError), err:
-				print "[InputDevice] Error: evdev='%s' getInputDevices <ERROR: ioctl(EVIOCGNAME): '%s'>" % (evdev, str(err))
+				print '[iInputDevices] getInputDevices ' + evdev + ' <ERROR: ioctl(EVIOCGNAME): ' + str(err) + ' >'
 				self.name = None
 
 			if self.name:
-				devtype = self.getInputDeviceType(self.name)
-				print "[InputDevice] Found: evdev='%s', name='%s', type='%s'" % (evdev, self.name, devtype)
-				self.Devices[evdev] = {'name': self.name, 'type': devtype, 'enabled': False, 'configuredName': None }
+				self.Devices[evdev] = {'name': self.name, 'type': self.getInputDeviceType(self.name),'enabled': False, 'configuredName': None }
 
 
 	def getInputDeviceType(self,name):
-		if "remote control" in str(name).lower():
+		if "remote control" in name:
 			return "remote"
-		elif "keyboard" in str(name).lower():
+		elif "keyboard" in name:
 			return "keyboard"
-		elif "mouse" in str(name).lower():
+		elif "mouse" in name:
 			return "mouse"
 		else:
-			# print "[InputDevice] Unknown device type:",name
+			print "Unknown device type:",name
 			return None
 
 	def getDeviceName(self, x):
@@ -74,7 +68,7 @@ class inputDevices:
 		return sorted(self.Devices.iterkeys())
 
 	def setDeviceAttribute(self, device, attribute, value):
-		#print "[InputDevice] setting for device", device, "attribute", attribute, " to value", value
+		#print "[iInputDevices] setting for device", device, "attribute", attribute, " to value", value
 		if device in self.Devices:
 			self.Devices[device][attribute] = value
 
@@ -86,13 +80,13 @@ class inputDevices:
 
 	def setEnabled(self, device, value):
 		oldval = self.getDeviceAttribute(device, 'enabled')
-		#print "[InputDevice] setEnabled for device %s to %s from %s" % (device,value,oldval)
+		#print "[iInputDevices] setEnabled for device %s to %s from %s" % (device,value,oldval)
 		self.setDeviceAttribute(device, 'enabled', value)
 		if oldval is True and value is False:
 			self.setDefaults(device)
 
 	def setName(self, device, value):
-		#print "[InputDevice] setName for device %s to %s" % (device,value)
+		#print "[iInputDevices] setName for device %s to %s" % (device,value)
 		self.setDeviceAttribute(device, 'configuredName', value)
 
 	#struct input_event {
@@ -103,7 +97,7 @@ class inputDevices:
 	#}; -> size = 16
 
 	def setDefaults(self, device):
-		print "[InputDevice] setDefaults for device '%s'" % device
+		print "[iInputDevices] setDefaults for device %s" % device
 		self.setDeviceAttribute(device, 'configuredName', None)
 		event_repeat = struct.pack('iihhi', 0, 0, 0x14, 0x01, 100)
 		event_delay = struct.pack('iihhi', 0, 0, 0x14, 0x00, 700)
@@ -114,7 +108,7 @@ class inputDevices:
 
 	def setRepeat(self, device, value): #REP_PERIOD
 		if self.getDeviceAttribute(device, 'enabled'):
-			print "[InputDevice] setRepeat for device '%s' to %d ms" % (device,value)
+			print "[iInputDevices] setRepeat for device %s to %d ms" % (device,value)
 			event = struct.pack('iihhi', 0, 0, 0x14, 0x01, int(value))
 			fd = os.open("/dev/input/" + device, os.O_RDWR)
 			os.write(fd, event)
@@ -122,7 +116,7 @@ class inputDevices:
 
 	def setDelay(self, device, value): #REP_DELAY
 		if self.getDeviceAttribute(device, 'enabled'):
-			print "[InputDevice] setDelay for device '%s' to %d ms" % (device,value)
+			print "[iInputDevices] setDelay for device %s to %d ms" % (device,value)
 			event = struct.pack('iihhi', 0, 0, 0x14, 0x00, int(value))
 			fd = os.open("/dev/input/" + device, os.O_RDWR)
 			os.write(fd, event)
@@ -139,7 +133,7 @@ class InitInputDevices:
 		config.inputDevices = ConfigSubsection()
 		for device in sorted(iInputDevices.Devices.iterkeys()):
 			self.currentDevice = device
-			#print "[InputDevice] creating config entry for device: %s -> %s  " % (self.currentDevice, iInputDevices.Devices[device]["name"])
+			#print "[InitInputDevices] -> creating config entry for device: %s -> %s  " % (self.currentDevice, iInputDevices.Devices[device]["name"])
 			self.setupConfigEntries(self.currentDevice)
 			self.currentDevice = ""
 
@@ -203,14 +197,9 @@ config.plugins.remotecontroltype.rctype = ConfigInteger(default = 0)
 
 class RcTypeControl():
 	def __init__(self):
-		self.boxType = ""
-		if pathExists('/proc/stb/ir/rc/type') and pathExists('/proc/stb/info/boxtype') and getBrandOEM() != 'gigablue':
+		if SystemInfo["RcTypeChangable"] and os.path.exists('/proc/stb/info/boxtype'):
 			self.isSupported = True
-
-			fd = open('/proc/stb/info/boxtype', 'r')
-			self.boxType = fd.read().strip()
-			fd.close()
-
+			self.boxType = open('/proc/stb/info/boxtype', 'r').read().strip()
 			if config.plugins.remotecontroltype.rctype.value != 0:
 				self.writeRcType(config.plugins.remotecontroltype.rctype.value)
 		else:
@@ -224,17 +213,12 @@ class RcTypeControl():
 
 	def writeRcType(self, rctype):
 		if self.isSupported and rctype > 0:
-			fd = open('/proc/stb/ir/rc/type', 'w')
-			fd.write('%d' % rctype)
-			fd.close()
+			open('/proc/stb/ir/rc/type', 'w').write('%d' % rctype)
 
 	def readRcType(self):
+		rc = 0
 		if self.isSupported:
-			fd = open('/proc/stb/ir/rc/type', 'r')
-			rc = fd.read().strip()
-			fd.close()
-		else:
-			rc = 0
+			rc = open('/proc/stb/ir/rc/type', 'r').read().strip()
 		return int(rc)
 
 iRcTypeControl = RcTypeControl()

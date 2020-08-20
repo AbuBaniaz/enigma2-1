@@ -1494,6 +1494,8 @@ class InfoBarEPG:
 
 	def __init__(self):
 		self.is_now_next = False
+		self.dlg_stack = []
+		self.bouquetSel = None
 		self.eventView = None
 		self.epglist = []
 		self.defaultEPGType = self.getDefaultEPGtype()
@@ -1619,6 +1621,20 @@ class InfoBarEPG:
 					continue
 				services.append(ServiceReference(service))
 		return services
+
+	def closed(self, ret=False):
+		if not self.dlg_stack:
+			return
+		closedScreen = self.dlg_stack.pop()
+		if self.bouquetSel and closedScreen == self.bouquetSel:
+			self.bouquetSel = None
+		elif self.eventView and closedScreen == self.eventView:
+			self.eventView = None
+		if ret == True or ret == 'close':
+			dlgs=len(self.dlg_stack)
+			if dlgs > 0:
+				self.dlg_stack[dlgs-1].close(dlgs > 1)
+		self.reopen(ret)
 
 	def multiServiceEPG(self, type, showBouquet):
 		def openEPG(open, bouquet, bouquets):

@@ -22,7 +22,7 @@ class RecordingSettings(Setup):
 		self.buildChoices("DefaultPath", config.usage.default_path, None)
 		self.buildChoices("TimerPath", config.usage.timer_path, None)
 		self.buildChoices("InstantPath", config.usage.instantrec_path, None)
-		Setup.__init__(self, session=session, setup="Recording")
+		Setup.__init__(self, session=session, setup="recording")
 		self.greenText = self["key_green"].text
 		self.errorItem = -1
 		if self.getCurrentItem() in (config.usage.default_path, config.usage.timer_path, config.usage.instantrec_path):
@@ -63,19 +63,28 @@ class RecordingSettings(Setup):
 		self.changedEntry()
 
 	def pathStatus(self, path):
-		self.errorItem = -1
-		self.setFootnote("")
-		self["key_green"].text = self.greenText
-		if not path.startswith("<"):
-			filedevice = stat(path).st_dev
-			if filedevice in self.inhibitDevs:
-				self.errorItem = self["config"].getCurrentIndex()
-				self.setFootnote(_("Flash directory '%s' not allowed!") % path)
-				self["key_green"].text = ""
-			elif not fileExists(path, "w"):
-				self.errorItem = self["config"].getCurrentIndex()
-				self.setFootnote(_("Directory '%s' not writable!") % path)
-				self["key_green"].text = ""
+		if path.startswith("<"):
+			self.errorItem = -1
+			footnote = ""
+			green = self.greenText
+		elif not isdir(path):
+			self.errorItem = self["config"].getCurrentIndex()
+			footnote = _("Directory '%s' does not exist!") % path
+			green = ""
+		elif stat(path).st_dev in self.inhibitDevs:
+			self.errorItem = self["config"].getCurrentIndex()
+			footnote = _("Flash directory '%s' not allowed!") % path
+			green = ""
+		elif not fileExists(path, "w"):
+			self.errorItem = self["config"].getCurrentIndex()
+			footnote = _("Directory '%s' not writable!") % path
+			green = ""
+		else:
+			self.errorItem = -1
+			footnote = ""
+			green = self.greenText
+		self.setFootnote(footnote)
+		self["key_green"].text = green
 
 	def selectionChanged(self):
 		if self.errorItem == -1:

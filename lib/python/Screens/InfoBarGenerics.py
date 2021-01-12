@@ -234,6 +234,12 @@ class InfoBarUnhandledKey:
 			KEYIDS["KEY_CHANNELUP"], KEYIDS["KEY_CHANNELDOWN"],
 			KEYIDS["KEY_NEXT"], KEYIDS["KEY_PREVIOUS"]
 		)
+		self.onClose.append(self.__onClose)
+
+	def __onClose(self):
+		eActionMap.getInstance().unbindAction('', self.actionA)
+		eActionMap.getInstance().unbindAction('', self.actionB)
+		self.unhandledKeyDialog.close()
 
 	def actionA(self, key, flag):  # This function is called on every keypress!
 		print "[InfoBarGenerics] Key: %s (%s) KeyID='%s' Binding='%s'." % (key, KEYFLAGS[flag], self.invKeyIds.get(key, ""), getKeyDescription(key))
@@ -1180,7 +1186,7 @@ class InfoBarChannelSelection:
 		][int(config.usage.channelbutton_mode.value)]
 
 	def _helpChannelPlusPressed(self):
-		self._helpChannelPlusMinusPressed(_("Switch to the next channel"))
+		return self._helpChannelPlusMinusPressed(_("Switch to the next channel"))
 
 	def ChannelPlusPressed(self):
 		if config.usage.channelbutton_mode.value == "0" or config.usage.show_second_infobar.value == "INFOBAREPG":
@@ -1193,7 +1199,7 @@ class InfoBarChannelSelection:
 			self.session.execDialog(self.servicelist)
 
 	def _helpChannelMinusPressed(self):
-		self._helpChannelPlusMinusPressed(_("Switch to the previous channel"))
+		return self._helpChannelPlusMinusPressed(_("Switch to the previous channel"))
 
 	def ChannelMinusPressed(self):
 		if config.usage.channelbutton_mode.value == "0" or config.usage.show_second_infobar.value == "INFOBAREPG":
@@ -3460,7 +3466,6 @@ class InfoBarSubserviceSelection:
 			{
 				iPlayableService.evUpdatedEventInfo: self.checkSubservicesAvail
 			})
-		self.onClose.append(self.__removeNotifications)
 
 		self.bouquets = self.bsel = self.selectedSubservice = None
 
@@ -3475,9 +3480,6 @@ class InfoBarSubserviceSelection:
 			self.openTimerList()
 		else:
 			self.subserviceSelection()
-
-	def __removeNotifications(self):
-		self.session.nav.event.remove(self.checkSubservicesAvail)
 
 	def checkSubservicesAvail(self):
 		serviceRef = self.session.nav.getCurrentlyPlayingServiceReference()
